@@ -18,21 +18,28 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
-      - name: Install Gradle
+      - name: Install Gradle & create wrapper
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.9-bin.zip
-          unzip -q gradle-8.9-bin.zip
-          echo "$(pwd)/gradle-8.9/bin" >> $GITHUB_PATH
-
-      - name: Generate Wrapper & Build
-        run: |
+          # Скачиваем Gradle 8.9
+          curl -sL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o gradle.zip
+          unzip -q gradle.zip
+          export PATH="$PWD/gradle-8.9/bin:$PATH"
+          
+          # Создаём wrapper
           gradle wrapper --gradle-version 8.9
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: Accept Android licenses
+        run: |
+          yes | sdkmanager --licenses || true
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -40,3 +47,4 @@ jobs:
           name: Tetris-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+          if-no-files-found: error
