@@ -5,7 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:   # можно запускать вручную из вкладки Actions
+  workflow_dispatch:   # Запуск вручную из вкладки Actions
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -21,26 +21,28 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create Gradle Wrapper
+      - name: Generate Gradle Wrapper
         run: |
-          # Устанавливаем Gradle и генерируем wrapper
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq gradle
-          gradle wrapper --gradle-version 8.9
-          chmod +x gradlew
+          # Если wrapper отсутствует — создаём его
+          if [ ! -f ./gradlew ]; then
+            gradle wrapper --gradle-version 8.9
+          fi
+          chmod +x ./gradlew
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace --no-daemon
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Tetris-debug-apk
+          name: Tetris-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
           if-no-files-found: error
